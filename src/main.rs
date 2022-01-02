@@ -119,7 +119,20 @@ fn _main(file: &str) -> Result<()> {
 
     stdout()
         .execute(SetForegroundColor(Color::Cyan))?
-        .execute(Print("Read the Genre\n"))?
+        .execute(Print("Read/Change the Genre\n"))?
+        .execute(ResetColor)?;
+
+        
+    stdout()
+        .execute(SetForegroundColor(Color::DarkYellow))?
+        .execute(Print("[5] "))?
+        .execute(ResetColor)?;
+    
+    print!("");
+
+    stdout()
+        .execute(SetForegroundColor(Color::Cyan))?
+        .execute(Print("Read/Change the Year\n"))?
         .execute(ResetColor)?;
 
     stdout()
@@ -162,6 +175,10 @@ fn _main(file: &str) -> Result<()> {
                 code: KeyCode::Char('4'),
                 ..
             }) => {genre(&file); break Ok(())},
+            Event::Key(KeyEvent {
+                code: KeyCode::Char('5'),
+                ..
+            }) => {year(&file); break Ok(())},
             _ => (),
         }
     }
@@ -300,8 +317,6 @@ fn title(_file: &str){
 
         let input_title = user_input().unwrap();
 
-        println!("{}", input_title);
-
         if input_title.chars().count() > 60 {
             clear();
             execute!(
@@ -434,7 +449,6 @@ fn artist(_file: &str) {
         print!("");
         std::io::stdout().flush().expect("Error, Couldnt flush io::stdout");
         let input_artist = user_input().unwrap();
-        println!("{}", input_artist);
         if input_artist.chars().count() > 60 {
             clear();
             execute!(
@@ -565,7 +579,6 @@ fn album(_file: &str) {
         print!("");
         std::io::stdout().flush().expect("Error, Couldnt flush io::stdout");
         let input_album = user_input().unwrap();
-        println!("{}", input_album);
         if input_album.chars().count() > 60 {
             clear();
             execute!(
@@ -683,7 +696,6 @@ fn genre(_file: &str) {
         print!("");
         std::io::stdout().flush().expect("Error, Couldnt flush io::stdout");
         let input_genre = user_input().unwrap();
-        println!("{}", input_genre);
         if input_genre.chars().count() > 60 {
             clear();
             execute!(
@@ -697,6 +709,178 @@ fn genre(_file: &str) {
         }
         tag.set_genre(input_genre);
         tag.write_to_path(file, Version::Id3v24);
+        execute!(
+            stdout(),
+            SetForegroundColor(Color::Green),
+            Print("Success\n"),
+            ResetColor,
+        );
+        Ok(())
+    }
+}
+
+fn year(_file: &str) {
+    
+    clear();
+    std::thread::sleep_ms(30);
+
+    execute!(
+        stdout(),
+        SetForegroundColor(Color::Green),
+        Print("Do you want to Read or Change The Year\n"),
+        Print("Click the key on your keyboard\n"),
+        ResetColor,
+    );
+    
+    print!("");
+
+    execute!(
+        stdout(),
+        SetForegroundColor(Color::DarkYellow),
+        Print("[1] "),
+        ResetColor,
+    );
+
+    print!("");
+    
+    execute!(
+        stdout(),
+        SetForegroundColor(Color::Cyan),
+        Print("Read     "),
+        ResetColor,
+    );
+
+    print!("");
+
+    execute!(
+        stdout(),
+        SetForegroundColor(Color::DarkYellow),
+        Print("[2] "),
+        ResetColor,
+    );
+    
+    print!("");
+
+    execute!(
+        stdout(),
+        SetForegroundColor(Color::Cyan),
+        Print("Change    "),
+        ResetColor,
+    );
+
+    print!("");
+
+    execute!(
+        stdout(),
+        SetForegroundColor(Color::DarkYellow),
+        Print("[q] "),
+        ResetColor,
+    );
+
+    print!("");
+
+
+    execute!(
+        stdout(),
+        SetForegroundColor(Color::Cyan),
+        Print("quit\n"),
+        ResetColor,
+    );
+
+    print!("");
+
+
+    loop {
+        match read().unwrap() {
+            Event::Key(KeyEvent {
+                code: KeyCode::Char('q'),
+                ..
+            }) => exit(),
+
+            Event::Key(KeyEvent {
+                code: KeyCode::Char('1'),
+                ..
+            }) => {_read(&_file); break},
+
+            Event::Key(KeyEvent {
+                code: KeyCode::Char('2'),
+                ..
+            }) => {_change(&_file); break},
+
+            _ => ()
+        }
+    }
+
+    fn _read(file: &str) -> Result<()> {
+        let tag = Tag::read_from_path(file).unwrap();
+        if let Some(year) = tag.year() {
+            execute!(
+                stdout(),
+                SetForegroundColor(Color::DarkYellow),
+                Print("The Year Is: "),
+                ResetColor,
+            );
+            execute!(
+                stdout(),
+                SetForegroundColor(Color::Cyan),
+                Print(year),
+                Print("\n"),
+                ResetColor,
+            );
+        } else {
+            execute!(
+                stdout(),
+                SetForegroundColor(Color::DarkYellow),
+                Print("This MP3 File Doesn't Have A Year\n"),
+                ResetColor,
+            );
+        }
+        Ok(())
+    }
+
+    fn _change(file: &str) -> Result<()> {
+        let mut tag = Tag::read_from_path(file).unwrap();
+        execute!(
+            stdout(),
+            SetForegroundColor(Color::DarkYellow),
+            Print("What do you want the year to be > "),
+            ResetColor,
+        );
+
+        print!("");
+        std::io::stdout().flush().expect("Error, Couldnt flush io::stdout");
+
+        let input_year = user_input().unwrap();
+
+        if input_year.chars().count() > 60 {
+            clear();
+            execute!(
+                stdout(),
+                SetForegroundColor(Color::DarkRed),
+                Print("The year Can't be logner than 60 chars"),
+                ResetColor,
+            );
+            print!("");
+            _change(&file);
+        }
+
+        ////! try to convert the input_year to i32 and if it fails print an error////
+        if let Ok(year) = input_year.parse::<i32>() {
+            tag.set_year(year);
+        } else {
+            clear();
+            execute!(
+                stdout(),
+                SetForegroundColor(Color::DarkRed),
+                Print("The year must be a number\n"),
+                ResetColor,
+            );
+            print!("");
+            _change(&file);
+        }
+
+        tag.write_to_path(file, Version::Id3v24);
+
         execute!(
             stdout(),
             SetForegroundColor(Color::Green),
