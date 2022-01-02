@@ -1,0 +1,9 @@
+[package]
+name = "audio-metadata-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+id3 = "0.6.6"
+rustop = "*"
+crossterm = "0.22"
